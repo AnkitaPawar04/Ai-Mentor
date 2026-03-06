@@ -1,18 +1,19 @@
+// backend/server.js
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-
 import { connectDB, sequelize } from "./config/db.js";
-
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/userRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
-import discussionRoutes from "./routes/discussionRoutes.js";
+//import discussionRoutes from "./routes/discussionRoutes.js"; // Replaced by communityRoutes.js
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import sidebarRoutes from "./routes/sidebarRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import communityRoutes from "./routes/communityRoutes.js";
+import "./models/CommunityPost.js";
 
 dotenv.config();
 
@@ -40,14 +41,17 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
+app.use("/uploads", express.static("uploads"));
+
 // ✅ REGISTER ROUTES (CORRECT PLACE)
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/discussions", discussionRoutes);
+//app.use("/api/discussions", discussionRoutes);   // Replaced by communityRoutes
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/sidebar", sidebarRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/community", communityRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
@@ -66,7 +70,7 @@ const startServer = async () => {
     // Sync database models
     await sequelize.sync({ alter: true });
     console.log("✅ Database models synced successfully");
-
+    
     app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
     });
