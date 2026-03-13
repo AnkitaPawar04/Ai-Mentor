@@ -87,13 +87,17 @@ router.post("/login", async (req, res) => {
       });
 
       // ✅ Notification Trigger (Security Alert)
-      import("../controllers/notificationController.js").then(({ createNotification }) => {
-        createNotification(user.id, {
-          title: "New Login Detected",
-          message: `A new login was detected for your account at ${new Date().toLocaleString()}.`,
-          type: "security",
+      import("../controllers/notificationController.js")
+        .then(({ createNotification }) => {
+          createNotification(user.id, {
+            title: "New Login Detected",
+            message: `A new login was detected for your account at ${new Date().toLocaleString()}.`,
+            type: "security",
+          });
+        })
+        .catch((error) => {
+          console.error("Failed to load notificationController or send login notification:", error);
         });
-      });
     } else {
       console.log("Login failed: password mismatch.");
       res.status(401).json({ message: "Invalid email or password" });
