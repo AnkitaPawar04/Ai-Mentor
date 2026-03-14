@@ -494,9 +494,8 @@ const DiscussionsPage = () => {
 
               {/* ── SIDE PANEL (course community) ── */}
               {selectedCourse && (
-                <div
-                  ref={panelRef}
-                  className="fixed top-0 right-0 h-full w-full sm:w-100 bg-card border-l border-border shadow-2xl z-50 flex flex-col"
+                <div ref={panelRef}
+                className="fixed top-16 right-0 h-[calc(100vh-4rem)] w-full sm:w-100 bg-card border-l border-border shadow-2xl z-50 flex flex-col"
                 >
                   {/* panel header */}
                   <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
@@ -681,7 +680,7 @@ const DiscussionsPage = () => {
             </main>
           )}
 
-          {/* ░░░░░ GLOBAL COMMUNITY VIEW ░░░░░ */}
+          {/* ░░░░░ GLOBAL COMMUNITY VIEW ░░░░ */}
           {activeView === "global" && (
             <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
               <div className="max-w-4xl mx-auto space-y-6">
