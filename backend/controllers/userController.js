@@ -322,6 +322,15 @@ const removePurchasedCourse = async (req, res) => {
     
     const userId= req.user.id;
 
+    // delete user's profile avatar from Cloudinary (if it exists)
+    try {
+      const avatarPublicId = `user_avatars/user_${userId}`;
+      await cloudinary.uploader.destroy(avatarPublicId);
+    } catch (cloudinaryError) {
+      console.error("Cloudinary avatar deletion error:", cloudinaryError);
+      // continue with account deletion even if avatar deletion fails
+    }
+
      // delete user's community posts
      await CommunityPost.destroy({
       where: {  userId }
