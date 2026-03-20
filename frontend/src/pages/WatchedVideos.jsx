@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { useSidebar } from "../context/SidebarContext";
@@ -18,8 +16,6 @@ import {
 import API_BASE_URL from "../lib/api";
 
 const WatchedVideos = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
   const { sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed } = useSidebar();
   const [searchQuery, setSearchQuery] = useState("");
   const [courseFilter, setCourseFilter] = useState("All Courses");
@@ -79,7 +75,7 @@ const WatchedVideos = () => {
           <main className="flex-1 p-4 md:p-6 lg:p-8 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-              <p className="text-muted">{t("watched.loading")}</p>
+              <p className="text-muted">Loading watched videos...</p>
             </div>
           </main>
         </div>
@@ -139,7 +135,7 @@ const WatchedVideos = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-muted text-sm font-normal mb-1">
-              {t("watched.total_hours")}
+              Total Hours
             </p>
             <p className="text-main text-2xl font-bold">
               {metrics.totalHours}h
@@ -156,7 +152,7 @@ const WatchedVideos = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-muted text-sm font-normal mb-1">
-              {t("watched.videos_completed")}
+              Videos Completed
             </p>
             <p className="text-main text-2xl font-bold">
               {metrics.videosCompleted}
@@ -173,7 +169,7 @@ const WatchedVideos = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-muted text-sm font-normal mb-1">
-              {t("watched.avg_session")}
+              Avg Session
             </p>
             <p className="text-main text-2xl font-bold">
               {metrics.avgSession}
@@ -190,7 +186,7 @@ const WatchedVideos = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-muted text-sm font-normal mb-1">
-              {t("watched.learning_streak")}
+              Learning Streak
             </p>
             <p className="text-main text-2xl font-bold">
               {metrics.learningStreak}
@@ -212,7 +208,7 @@ const WatchedVideos = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
           <input
             type="text"
-            placeholder={t("watched.search_placeholder")}
+            placeholder="Search videos..."
             className="w-full h-[42px] pl-10 pr-4 border border-border rounded-lg bg-input text-main placeholder-muted"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -226,7 +222,7 @@ const WatchedVideos = () => {
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
           >
-            <option value="All Courses">{t("watched.all_courses")}</option>
+            <option>All Courses</option>
             {courses.map((course) => (
               <option key={course.id} value={course.title}>
                 {course.title}
@@ -238,19 +234,19 @@ const WatchedVideos = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="All Status">{t("watched.all_status")}</option>
-            <option value="Completed">{t("analytics.completed")}</option>
-            <option value="In Progress">{t("watched.in_progress")}</option>
+            <option>All Status</option>
+            <option>Completed</option>
+            <option>In Progress</option>
           </select>
           <select
             className="h-[43px] px-3 pr-8 border border-border rounded-lg bg-card text-main w-full sm:min-w-[140px]"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <option value="Most Recent">{t("watched.most_recent")}</option>
-            <option value="Oldest First">{t("watched.oldest_first")}</option>
-            <option value="Title A-Z">{t("watched.title_az")}</option>
-            <option value="Title Z-A">{t("watched.title_za")}</option>
+            <option>Most Recent</option>
+            <option>Oldest First</option>
+            <option>Title A-Z</option>
+            <option>Title Z-A</option>
           </select>
         </div>
       </div>
@@ -297,8 +293,8 @@ const WatchedVideos = () => {
             }
           >
             {video.status === "completed"
-              ? t("analytics.completed")
-              : `${video.progress}${t("watched.percent_complete")}`}
+              ? "Completed"
+              : `${video.progress}% Complete`}
           </span>
           <span>{formatLastWatched(video.lastWatched)}</span>
         </div>
@@ -310,13 +306,14 @@ const WatchedVideos = () => {
                 ? "bg-canvas text-main hover:bg-canvas-alt"
                 : "bg-orange-500 text-white"
               }`}
-            // --- VIDEO RESUME NAVIGATION FOR THE TEAM ---
-            // When the user clicks Resume, we navigate them to the course URL but WE ALSO PASS STATE.
-            // LearningPage uses `location.state.lessonId` to override the default course progression
-            // and forcefully jump the user to this specific video instead.
-            onClick={() => navigate(`/learning/${video.courseId}`, { state: { lessonId: video.lessonId } })}
+            onClick={() =>
+              console.log(
+                video.status === "completed" ? "Rewatching" : "Resuming",
+                video.title
+              )
+            }
           >
-            {video.status === "completed" ? t("watched.rewatch") : t("watched.resume")}
+            {video.status === "completed" ? "Rewatch" : "Resume"}
           </button>
           <button
             className="w-7 h-10 flex items-center justify-center text-muted hover:text-main"
@@ -351,13 +348,13 @@ const WatchedVideos = () => {
               className="text-main text-2xl md:text-3xl font-bold mb-1"
               style={{ fontFamily: "Poppins, sans-serif" }}
             >
-              {t("watched.title")}
+              Watched Videos
             </h1>
             <p
               className="text-muted text-sm md:text-base"
               style={{ fontFamily: "Poppins, sans-serif" }}
             >
-              {t("watched.subtitle")}
+              Track your learning progress and manage your video history
             </p>
           </div>
 

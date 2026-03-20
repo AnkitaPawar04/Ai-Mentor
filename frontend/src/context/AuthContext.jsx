@@ -12,29 +12,20 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    return !!(token && storedUser && storedUser !== "undefined");
-  });
-
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    try {
-      return storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  
   useEffect(() => {
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-
-    if (!token || !storedUser || storedUser === "undefined") {
+    
+    // Check if both exist and are valid
+    if (token && storedUser && storedUser !== "undefined") {
+      setIsAuthenticated(true);
+    } else {
       setIsAuthenticated(false);
-      setUser(null);
     }
-  }, []);
+  }, [user]);
 
   const login = (userData) => {
     setIsAuthenticated(true);
@@ -77,16 +68,16 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-
+    
     // Clear course progress from localStorage
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('course-progress-')) {
         localStorage.removeItem(key);
       }
     });
-
+    
     // Safety: Clear everything to prevent stale data
-    localStorage.clear();
+    localStorage.clear(); 
   };
 
   const updateUser = (updatedUserData) => {

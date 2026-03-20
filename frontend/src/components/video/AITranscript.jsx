@@ -1,11 +1,9 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 
 /*
   AITranscript Component
 */
 const AITranscript = ({ captions, currentTime, activeCaptionRef, containerRef, onTranscriptClick, formatTime }) => {
-  const { t } = useTranslation();
   return (
     <div
       ref={containerRef}
@@ -14,7 +12,7 @@ const AITranscript = ({ captions, currentTime, activeCaptionRef, containerRef, o
       {/* Transcript Section - Takes 1 column */}
       <div className="sticky top-0 bg-card border-b border-border px-6 py-4 z-10">
         <h2 className="text-lg font-semibold text-main">
-          {t("learning.transcript")}
+          Transcript
         </h2>
       </div>
       <div
@@ -44,7 +42,7 @@ const AITranscript = ({ captions, currentTime, activeCaptionRef, containerRef, o
           })
         ) : (
           <div className="text-sm text-muted text-center py-8">
-            {t("learning.no_transcript")}
+            No transcript available for this lesson.
           </div>
         )}
       </div>

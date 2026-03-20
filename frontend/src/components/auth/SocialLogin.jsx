@@ -2,7 +2,6 @@ import React from "react";
 import logoGoogle from "../../assets/images/google.jpg";
 import { auth, googleProvider, signInWithPopup } from "../../firebase"; // Adjust path if needed
 import { useAuth } from "../../context/AuthContext";
-import toast from "react-hot-toast";
 
 const SocialLogin = () => {
   const { login } = useAuth();
@@ -29,12 +28,9 @@ const SocialLogin = () => {
       }
 
       // Use existing AuthContext login
-      toast.success("Logged in successfully!");
-      setTimeout(() => {
-        login(data, true);
-      }, 1000);
+      login(data, true);
     } catch (err) {
-      toast.error(err.message || "Google sign-in error");
+      alert(err.message || "Google sign-in error");
     }
   };
 

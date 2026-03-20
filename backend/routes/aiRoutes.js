@@ -41,26 +41,6 @@ router.post("/generate-video", protect, async (req, res) => {
 
    if (cachedVideo) {
       console.log("🎯 Cache found. Verifying file exists...");
-      // If already a trusted Cloudinary URL, return it directly — no local check needed
-      let parsedUrl;
-      try {
-        parsedUrl = new URL(cachedVideo.videoUrl);
-      } catch (e) {
-        parsedUrl = null;
-      }
-      if (
-        parsedUrl &&
-        parsedUrl.protocol === "https:" &&
-        parsedUrl.hostname.endsWith("res.cloudinary.com")
-      ) {
-        console.log("✅ Trusted Cloudinary URL found. Serving directly.");
-        return res.json({
-          videoUrl: cachedVideo.videoUrl,
-          transcriptName: cachedVideo.transcriptName,
-          jobId: cachedVideo.jobId,
-          cached: true,
-        });
-      }
 
       const filename = cachedVideo.videoUrl.split("/").pop();
 
@@ -87,7 +67,7 @@ router.post("/generate-video", protect, async (req, res) => {
     }
     
 
-    // Get titles from JSON
+    // 📘 Get titles from JSON
     const titles = getCourseAndLessonTitles(courseId, lessonId);
 
     if (!titles) {
@@ -96,7 +76,7 @@ router.post("/generate-video", protect, async (req, res) => {
 
     const { courseTitle, lessonTitle } = titles;
 
-    // Call AI service
+    // 🚀 Call AI service
     console.log("🤖 Cache miss. Calling AI service for:", celebrity);
     const aiResponse = await fetch(
       `${process.env.AI_SERVICE_URL}/generate`,
@@ -120,7 +100,7 @@ router.post("/generate-video", protect, async (req, res) => {
     const videoUrl = `/api/ai/video/${courseId}/${filename}`;
     const textUrl = `/api/ai/transcript/${text_file}`;
 
-    // Save to Cache
+    // 💾 Save to Cache
     await AIVideo.create({
       courseId: Number(courseId),
       lessonId: String(lessonId),

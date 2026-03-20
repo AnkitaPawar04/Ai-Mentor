@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSidebar } from "../context/SidebarContext";
 import { getAIVideo } from "../service/aiService";
@@ -42,7 +41,6 @@ const getYouTubeVideoId = (url) => {
 export default function Learning() {
 
 
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: courseId } = useParams();
   const { user, updateUser } = useAuth();
@@ -89,8 +87,6 @@ export default function Learning() {
   const lastLessonIdRef = useRef(null);
   const lastCelebrityRef = useRef(null);
   const hasRestoredProgressRef = useRef(false);
-  const jumpToTimeRef = useRef(null);
-  const lastSavedTimeRef = useRef(0);
 
   // Auto-scroll transcript to keep active caption visible
   useEffect(() => {
@@ -181,22 +177,12 @@ export default function Learning() {
 
           let initialLesson = null;
 
-          // --- WATCH HISTORY RESTORATION LOGIC FOR THE TEAM ---
-          // Determine which lesson to load first based on priority:
-
-          // Priority 1: Check if the user clicked "Resume" on a specific video from the Watched Videos dashboard.
-          // This is passed via React Router's location state.
-          if (location?.state?.lessonId) {
-            initialLesson = findFullLesson(location.state.lessonId);
-          }
-
-          // Priority 2: If no specific video was requested, fallback to the user's globally saved progress
-          // This picks up where they left off the last time they closed this course.
-          if (!initialLesson && userProgress?.currentLesson?.lessonId) {
+          if (userProgress?.currentLesson?.lessonId) {
             initialLesson = findFullLesson(userProgress.currentLesson.lessonId);
           }
 
-          // Priority 3: First time opening the course. Fallback to the very first lesson of the first module.
+          // If no progress or lesson not found, fallback to the course's default currentLesson 
+          // or the very first lesson of the first module
           if (!initialLesson) {
             const defaultId = courseData.currentLesson?.id || courseData.modules?.[0]?.lessons?.[0]?.id;
             initialLesson = findFullLesson(defaultId);
@@ -208,32 +194,36 @@ export default function Learning() {
 
           setLearningData(courseData);
 
-          if (userProgress && initialLesson) {
-            if (!hasRestoredProgressRef.current) {
-              hasRestoredProgressRef.current = true;
-              
-              // Restore saved AI content if it exists
-              const savedData = userProgress.lessonData?.[initialLesson.id];
-              if (savedData?.generatedTextContent) {
-                setGeneratedTextContent(savedData.generatedTextContent);
-                if (savedData.aiVideoUrl) {
-                  setAiVideoUrl(savedData.aiVideoUrl);
-                }
-                if (savedData.celebrity) {
-                  setSelectedCelebrity(savedData.celebrity);
-                  lastCelebrityRef.current = savedData.celebrity;
-                }
-              }
-              
-              if (savedData?.watchHistory?.currentTime) {
-                jumpToTimeRef.current = savedData.watchHistory.currentTime;
-              }
+          if (userProgress) {
+            // Do NOT setExpandedModule here; dropdown should be closed by default
+            // Set current lesson based on progress
+            const currentLesson = userProgress.currentLesson;
+            if (currentLesson && !hasRestoredProgressRef.current) {
+              // Find and set the current lesson
+              const lesson = courseData.modules
+                .flatMap((module) => module.lessons)
+                .find((l) => l.id === currentLesson.lessonId);
 
-              // Finally, trigger the state update to ensure UI re-renders with the exact lesson
-              setLearningData((prev) => ({
-                ...prev,
-                currentLesson: initialLesson,
-              }));
+              if (lesson) {
+                hasRestoredProgressRef.current = true;
+                // Restore saved AI content if it exists
+                const savedData = userProgress.lessonData?.[lesson.id];
+                if (savedData?.generatedTextContent) {
+                  setGeneratedTextContent(savedData.generatedTextContent);
+                  if (savedData.aiVideoUrl) {
+                    setAiVideoUrl(savedData.aiVideoUrl);
+                  }
+                  if (savedData.celebrity) {
+                    setSelectedCelebrity(savedData.celebrity);
+                    lastCelebrityRef.current = savedData.celebrity;
+                  }
+                }
+
+                setLearningData((prev) => ({
+                  ...prev,
+                  currentLesson: lesson,
+                }));
+              }
             }
           }
         } else {
@@ -489,22 +479,6 @@ export default function Learning() {
     if (video) {
       video.addEventListener('webkitbeginfullscreen', () => setIsFullscreen(true));
       video.addEventListener('webkitendfullscreen', () => setIsFullscreen(false));
-      
-      const handleLoadedMetadata = () => {
-        if (jumpToTimeRef.current !== null && jumpToTimeRef.current > 0) {
-          // If video is almost finished, don't jump to end, start over
-          const isAlmostFinished = jumpToTimeRef.current >= video.duration - 5;
-          if (!isAlmostFinished) {
-            video.currentTime = jumpToTimeRef.current;
-            setCurrentTime(jumpToTimeRef.current);
-          }
-          jumpToTimeRef.current = null;
-        }
-      };
-      video.addEventListener('loadedmetadata', handleLoadedMetadata);
-      return () => {
-        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      };
     }
 
     return () => {
@@ -560,7 +534,7 @@ export default function Learning() {
       <div className="min-h-screen bg-canvas-alt flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-muted">{t("learning.loading")}</p>
+          <p className="mt-4 text-muted">Loading...</p>
         </div>
       </div>
     );
@@ -660,14 +634,6 @@ export default function Learning() {
     setGeneratedTextContent(null);
     setAiVideoUrl(null);
     setLearningData((prev) => ({ ...prev, currentLesson: lesson }));
-    
-    // Set jump time if history exists
-    const savedData = user?.purchasedCourses?.find((c) => c.courseId === parseInt(courseId))?.progress?.lessonData?.[lesson.id];
-    if (savedData?.watchHistory?.currentTime) {
-      jumpToTimeRef.current = savedData.watchHistory.currentTime;
-    } else {
-      jumpToTimeRef.current = 0;
-    }
   };
 
   const handlePrevious = () => {
@@ -737,43 +703,7 @@ export default function Learning() {
       }
 
       setCurrentTime(vidCurrentTime);
-      const currentProgressPercent = vidDuration > 0 ? (vidCurrentTime / vidDuration) * 100 : 0;
-      setProgress(currentProgressPercent);
-
-      // --- WATCH HISTORY THROTTLING FOR THE TEAM ---
-      // We save watch history to the backend every 5 seconds to prevent spamming the server.
-      // This ensures we only lose at most 5 seconds of progress if the user suddenly closes the tab.
-      if (Math.abs(vidCurrentTime - lastSavedTimeRef.current) >= 5) {
-        lastSavedTimeRef.current = vidCurrentTime;
-        
-        // --- WATCH HISTORY VALIDATION FOR THE TEAM ---
-        // During initial video load, browsers might briefly report duration as NaN or Infinity.
-        // We MUST validate isFinite() and > 0, otherwise we will corrupt the database with NaN:NaN.
-        if (learningData?.currentLesson && isFinite(vidDuration) && vidDuration > 0 && !isNaN(currentProgressPercent)) {
-           const formatDurationString = (secs) => {
-             const m = Math.floor(secs / 60);
-             const s = Math.floor(secs % 60);
-             return `${m}:${s < 10 ? '0' : ''}${s}`;
-           };
-           
-           // Ensure progress is bound between 0 and 100
-           const safeProgress = Math.max(0, Math.min(100, currentProgressPercent));
-           
-           // Use the current lesson details to generate history
-           saveLessonData(learningData.currentLesson.id, {
-             watchHistory: {
-               currentTime: vidCurrentTime,
-               duration: vidDuration,
-               progressPercent: safeProgress,
-               lastWatched: new Date().toISOString(),
-               title: learningData.currentLesson.title || "Lesson Video",
-               thumbnail: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop",
-               formattedDuration: formatDurationString(vidDuration),
-               status: safeProgress >= 95 ? "completed" : "in-progress"
-             }
-           });
-        }
-      }
+      setProgress(vidDuration > 0 ? (vidCurrentTime / vidDuration) * 100 : 0);
 
       // update visible caption overlay
       if (captions.length > 0) {
@@ -898,7 +828,7 @@ export default function Learning() {
               onClick={() => navigate("/courses")}
               className="hover:text-blue-600 transition-colors"
             >
-              {t("learning.my_course")}
+              My Course
             </button>
             <ChevronRight className="w-4 h-4 text-muted" />
             {/* Show current module name instead of course title */}
@@ -929,7 +859,7 @@ export default function Learning() {
           <div className="flex items-center justify-between">
             {/* Custom Dropdown for Modules and Lessons */}
             <div className="relative min-w-95 max-w-125 flex items-center">
-              <span className="text-main font-semibold mr-3">{t("learning.contents")}</span>
+              <span className="text-main font-semibold mr-3">Contents</span>
               <div className="relative w-full">
                 <div
                   className="bg-canvas-alt border border-border rounded-2xl px-6 py-2 pr-12 text-base text-main cursor-pointer flex items-center justify-between select-none min-h-12"
@@ -1024,27 +954,29 @@ export default function Learning() {
                       ></div>
                     </div>
                     <p className="text-sm text-muted mt-2">
-                      {Math.round(progressPercent)}% {t("learning.complete")}
+                      {Math.round(progressPercent)}% Complete
                     </p>
                   </div>
                 );
               })()}
             </div>
 
-            <div className="flex items-center gap-3 w-full max-w-max ml-auto">
+            <div className="flex items-center gap-3">
               {/* AI Celebrity Button */}
               <button
                 onClick={() => setIsCelebrityModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-sm hover:shadow-md"
               >
                 <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-medium">{t("learning.select_ai_voiceover")}</span>
+                <span className="text-sm font-medium">Select AI Voiceover</span>
                 {selectedCelebrity && (
                   <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">
                     {selectedCelebrity.split(' ')[0]}
                   </span>
                 )}
               </button>
+
+
             </div>
           </div>
         </div>
@@ -1063,8 +995,8 @@ export default function Learning() {
                     <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-main">{t("learning.ai_celebrity_title")}</h2>
-                    <p className="text-xs text-muted mt-0.5">{t("learning.ai_celebrity_subtitle")}</p>
+                    <h2 className="text-lg font-semibold text-main">AI Celebrity Voiceover</h2>
+                    <p className="text-xs text-muted mt-0.5">Generate AI voice for this video</p>
                   </div>
                 </div>
                 <button
@@ -1082,7 +1014,7 @@ export default function Learning() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                   <input
                     type="search"
-                    placeholder={t("learning.search_celebrities")}
+                    placeholder="Search celebrities..."
                     value={celebritySearch}
                     onChange={(e) => setCelebritySearch(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 bg-canvas-alt border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-main placeholder-muted"
@@ -1141,10 +1073,10 @@ export default function Learning() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                          {t("learning.ai_voiceover_active")}
+                          AI Voiceover Active
                         </p>
                         <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                          {t("learning.ai_celebrity_subtitle")} — <span className="font-semibold">{selectedCelebrity}</span>
+                          Currently using <span className="font-semibold">{selectedCelebrity}</span>'s voice for this video
                         </p>
                       </div>
                     </div>
@@ -1158,7 +1090,7 @@ export default function Learning() {
                   onClick={() => setIsCelebrityModalOpen(false)}
                   className="px-4 py-2 text-sm text-muted hover:text-main hover:bg-canvas-alt rounded-lg transition-colors"
                 >
-                  {t("common.cancel")}
+                  Cancel
                 </button>
                 <button
                   onClick={() => setIsCelebrityModalOpen(false)}
@@ -1210,7 +1142,7 @@ export default function Learning() {
                   className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-all hover:shadow-md disabled:hover:shadow-none"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                  {t("learning.previous")}
+                  Previous
                 </button>
                 <button
                   onClick={handleNext}
@@ -1219,7 +1151,7 @@ export default function Learning() {
                   }
                   className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 transition-all hover:shadow-md disabled:hover:shadow-none"
                 >
-                  {isNavigating ? t("learning.loading") : t("learning.next")}
+                  {isNavigating ? "Loading..." : "Next"}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>

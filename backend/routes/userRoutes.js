@@ -2,11 +2,7 @@
 import express from "express";
 import multer from "multer";
 import path from "path";
-import { protect } from "../middleware/authMiddleware.js";
-
 import {
-  registerUser,
-  loginUser,
   getUserProfile,
   updateUserProfile,
   purchaseCourse,
@@ -15,9 +11,8 @@ import {
   getUserSettings,
   updateUserSettings,
   removePurchasedCourse,
-  deleteAccount,
-  changePassword
 } from "../controllers/userController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -33,31 +28,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-/* ---------- AUTH ROUTES ---------- */
-
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-
-/* ---------- USER ROUTES ---------- */
-
 router.route("/profile")
   .get(protect, getUserProfile)
   .put(protect, upload.single("avatar"), updateUserProfile);
 
-router.put("/change-password", protect, changePassword);
-
-router.post("/purchase-course", protect, purchaseCourse);
-
-router.put("/course-progress", protect, updateCourseProgress);
-
-router.get("/watched-videos", protect, getWatchedVideos);
-
-router.route("/settings")
-  .get(protect, getUserSettings)
-  .put(protect, updateUserSettings);
-
-router.post("/remove-course", protect, removePurchasedCourse);
-
-router.delete("/delete-account", protect, deleteAccount);
+router.route("/purchase-course").post(protect, purchaseCourse);
+router.route("/course-progress").put(protect, updateCourseProgress);
+router.route("/watched-videos").get(protect, getWatchedVideos);
+router.route("/settings").get(protect, getUserSettings).put(protect, updateUserSettings);
+router.route("/remove-course").post(protect, removePurchasedCourse);
 
 export default router;
