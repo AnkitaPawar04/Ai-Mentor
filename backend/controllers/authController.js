@@ -112,17 +112,22 @@ const login = async (req, res) => {
 // Background task to refresh/re-host avatar to Cloudinary without blocking login
 const refreshAvatarInBackground = async (userId, googlePictureUrl) => {
   try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      console.warn(`Skipping background avatar refresh because user ${userId} was not found`);
+      return;
+    }
+
     const result = await cloudinary.uploader.upload(googlePictureUrl, {
       folder: "user_avatars",
       public_id: `user_${userId}`,
       overwrite: true,
     });
-    
-    // Update the database with the new permanent Cloudinary URL
-    await User.update(
-      { avatar_url: result.secure_url },
-      { where: { id: userId } }
-    );
+
+    // Persist the new permanent Cloudinary URL, then recompute profile completeness
+    user.avatar_url = result.secure_url;
+    await user.save();
+    await ensureProfileCompleteness(user);
     console.log(`Successfully refreshed/re-hosted avatar to Cloudinary for user ${userId}`);
   } catch (err) {
     console.error("Background avatar refresh failed:", err);
