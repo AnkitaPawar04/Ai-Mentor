@@ -38,6 +38,7 @@ const Analytics = () => {
   const [newTask, setNewTask] = useState("");
   const [streak, setStreak] = useState(0);
   const [activeTab, setActiveTab] = useState("courses");
+  const [pageLoading, setPageLoading] = useState(true);
   const searchQuery = "";
 
   // Initialize dark mode from localStorage
@@ -81,10 +82,12 @@ const Analytics = () => {
         setStudySessions(analyticsData.studySessions || []);
       } catch (err) {
         console.error(err);
+      } finally {
+        setPageLoading(false);
       }
     };
 
-    if (user) fetchData();
+    if (user) fetchData(); else setPageLoading(false);
   }, [user]);
 
   // Streak calculation
@@ -229,6 +232,17 @@ const Analytics = () => {
 
   // Calculate ongoing courses (courses with progress > 0)
   const ongoingCourses = myCourses.filter(c => c.progress > 0).length;
+
+  if (pageLoading) {
+    return (
+      <main className="flex-1 p-4 md:p-6 lg:p-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-muted">Loading analytics...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
