@@ -73,9 +73,6 @@ const App = () => {
         {/* Other public routes */}
         <Route path="/course-preview/:courseId" element={<CoursePreview />} />
 
-        {/* Complete profile route */}
-        <Route path="/complete-profile" element={<CompleteProfilePage />} />
-
       </Routes>
     </Suspense>
   );
