@@ -160,7 +160,9 @@ const CoursesPage = () => {
   }
 
   const filteredExploreCourses = exploreCourses
-    .filter((course) => !myCourses.some((c) => c.id === course.id))
+    .filter((course) =>
+      !myCourses.some((c) => String(c.id) === String(course.id))
+    )
     .filter((course) => {
       if (searchQuery.trim() !== "") {
         return course.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -207,7 +209,7 @@ const CoursesPage = () => {
   return (
     <>
       {/* ══════ HERO ══════ */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-teal-700 via-teal-600 to-teal-800 pt-10 sm:pt-12 lg:pt-16 pb-8 sm:pb-10 lg:pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="relative bg-gradient-to-br from-teal-700 via-teal-600 to-teal-800 pt-10 sm:pt-12 lg:pt-16 pb-8 sm:pb-10 lg:pb-12 px-4 sm:px-6 lg:px-8">
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -556,7 +558,10 @@ const CoursesPage = () => {
                       <div className="flex justify-between items-center">
                         <div>
                           <span className="font-bold text-green-600">
-                            {course.price}
+                             {course?.priceValue === 0
+                              ? "Free"
+                             : `₹${course?.priceValue || 0}`}
+
                           </span>
                         </div>
                         <button
@@ -597,7 +602,7 @@ const CoursesPage = () => {
             </p>
             <div className="flex justify-between items-center mt-4">
               <span className="text-lg font-bold text-green-600">
-                {selectedCourse.price}
+                {selectedCourse.priceValue > 0 ? `₹${selectedCourse.priceValue}` : "Free"}
               </span>
             </div>
             <button
