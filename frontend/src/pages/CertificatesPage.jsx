@@ -30,16 +30,20 @@ const CertificatesPage = () => {
   }, []);
 
   useEffect(() => {
-    if (showPreview) {
-      document.addEventListener("keydown", handleClosePreview);
-      document.body.style.overflow = "hidden";
-    } else {
+    if (!showPreview) {
       document.removeEventListener("keydown", handleClosePreview);
-      document.body.style.overflow = "";
+      return () => {
+        document.removeEventListener("keydown", handleClosePreview);
+      };
     }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.addEventListener("keydown", handleClosePreview);
+    document.body.style.overflow = "hidden";
+
     return () => {
       document.removeEventListener("keydown", handleClosePreview);
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousBodyOverflow;
     };
   }, [showPreview, handleClosePreview]);
 
@@ -216,7 +220,9 @@ const CertificatesPage = () => {
                     <div className="relative bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-blue-950/40 flex flex-col items-center justify-center p-8 border-l border-gray-100 dark:border-gray-700">
                       {/* Label */}
                       <p className="text-xs font-semibold tracking-widest uppercase text-indigo-400 dark:text-indigo-300 mb-4">
-                        🏆 Certificate Preview
+                        {t("certificates.certificate_preview", {
+                          defaultValue: "🏆 Certificate Preview",
+                        })}
                       </p>
 
                       {/* Certificate Card */}
@@ -498,14 +504,50 @@ const CertificatesPage = () => {
             <div
               className="relative bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-indigo-300 transition-all duration-500"
               style={{ transformStyle: "preserve-3d" }}
+              onMouseEnter={(e) => {
+                const card = e.currentTarget;
+                card.__tiltRect = card.getBoundingClientRect();
+                card.style.willChange = "transform";
+              }}
               onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width - 0.5) * 18;
-                const y = ((e.clientY - rect.top) / rect.height - 0.5) * -18;
-                e.currentTarget.style.transform = `perspective(900px) rotateY(${x}deg) rotateX(${y}deg) scale(1.02)`;
+                const card = e.currentTarget;
+                card.__tiltPointer = { clientX: e.clientX, clientY: e.clientY };
+
+                if (!card.__tiltRect) {
+                  card.__tiltRect = card.getBoundingClientRect();
+                }
+
+                if (card.__tiltFrame) {
+                  return;
+                }
+
+                card.__tiltFrame = requestAnimationFrame(() => {
+                  const rect = card.__tiltRect;
+                  const pointer = card.__tiltPointer;
+
+                  if (!rect || !pointer) {
+                    card.__tiltFrame = null;
+                    return;
+                  }
+
+                  const x = ((pointer.clientX - rect.left) / rect.width - 0.5) * 18;
+                  const y = ((pointer.clientY - rect.top) / rect.height - 0.5) * -18;
+                  card.style.transform = `perspective(900px) rotateY(${x}deg) rotateX(${y}deg) scale(1.02)`;
+                  card.__tiltFrame = null;
+                });
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "perspective(900px) rotateY(0deg) rotateX(0deg) scale(1)";
+                const card = e.currentTarget;
+
+                if (card.__tiltFrame) {
+                  cancelAnimationFrame(card.__tiltFrame);
+                  card.__tiltFrame = null;
+                }
+
+                card.__tiltRect = null;
+                card.__tiltPointer = null;
+                card.style.willChange = "";
+                card.style.transform = "perspective(900px) rotateY(0deg) rotateX(0deg) scale(1)";
               }}
             >
               {/* Top gradient bar */}
