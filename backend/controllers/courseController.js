@@ -43,9 +43,7 @@ const formatCourse = (course) => ({
 ========================= */
 const getCourses = async (req, res) => {
   try {
-    const courses = await Course.findAll({
-      order: [["createdAt", "ASC"]],
-    });
+    const courses = await Course.findAll();
 
     res.json(courses.map(formatCourse));
   } catch (error) {
@@ -94,7 +92,6 @@ const getMyCourses = async (req, res) => {
       where: {
         id: purchasedIds,
       },
-      order: [["createdAt", "ASC"]],
     });
 
     res.json(
@@ -129,7 +126,7 @@ const getCourseLearningData = async (req, res) => {
 
     const modules = await Module.findAll({
       where: { courseId },
-      order: [["order", "ASC"], ["createdAt", "ASC"]],
+      order: [["order", "ASC"]],
     });
 
     const formattedModules = await Promise.all(
@@ -143,7 +140,7 @@ const getCourseLearningData = async (req, res) => {
               required: false,
             },
           ],
-          order: [["order", "ASC"], ["createdAt", "ASC"]],
+          order: [["order", "ASC"]],
         });
 
         return {

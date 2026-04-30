@@ -32,6 +32,20 @@ const Course = sequelize.define("Course", {
   },
 
   isBookmarked: DataTypes.BOOLEAN,
+
+  createdAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: DataTypes.NOW,
+  },
+
+  updatedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: DataTypes.NOW,
+  },
+}, {
+  timestamps: false,
 });
 
 export default Course;

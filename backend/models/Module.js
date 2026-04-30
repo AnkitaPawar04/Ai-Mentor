@@ -14,5 +14,7 @@ const Module = sequelize.define("Module", {
 
     title: DataTypes.STRING,
     order: DataTypes.INTEGER
+}, {
+    timestamps: false,
 });
 export default Module;

@@ -19,5 +19,7 @@ const Lesson = sequelize.define("Lesson", {
     type: DataTypes.STRING,
     youtubeUrl: DataTypes.STRING,
     order: DataTypes.INTEGER
+}, {
+    timestamps: false,
 });
 export default Lesson;
