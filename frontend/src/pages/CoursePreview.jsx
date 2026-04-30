@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import API_BASE_URL from "../lib/api";
 import { Play, ChevronDown, ChevronUp, X } from "lucide-react";
 import toast from "react-hot-toast";
+import PaymentMethodModal from "../components/PaymentMethodModal";
 /* safe getter */
 function safeGet(obj, path, fallback = undefined) {
   if (!obj || !path) return fallback;
@@ -58,6 +59,9 @@ export default function CoursePreview() {
   // modal for enrollment
   const [showEnrollPopup, setShowEnrollPopup] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  // payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentCourse, setPaymentCourse] = useState(null);
   // hero image src handling
   const [heroSrc, setHeroSrc] = useState("/ui/course-hero-placeholder.jpg");
   const heroCandidatesRef = useRef([]);
@@ -264,8 +268,9 @@ export default function CoursePreview() {
 
           // ✅ update notifications
           window.dispatchEvent(new Event("refreshNotifications"));
-          // ✅ redirect user
-          navigate(`/courses/${selectedCourse.id}`);
+          // ✅ redirect user to enrolled courses
+          navigate("/courses", { state: { activeTab: "my-courses" } });
+          setShowEnrollPopup(false);
           return;
         }
       } catch (err) {
@@ -276,34 +281,9 @@ export default function CoursePreview() {
       }
       return;
     }
-    // PAID COURSE FLOW
-    try {
-      setIsPurchasing(true);
-      const res = await fetch(`${API_BASE_URL}/api/payment/create-checkout-session`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          course: {
-            id: selectedCourse.id,
-            title: selectedCourse.title,
-            priceValue,
-          },
-        }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("Payment failed");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Payment error");
-      setIsPurchasing(false);
-    }
+    // PAID COURSE FLOW - Open payment method modal
+    setPaymentCourse(selectedCourse);
+    setShowPaymentModal(true);
   };
   if (loading) {
     return (
@@ -774,6 +754,24 @@ export default function CoursePreview() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* PAYMENT METHOD MODAL (Stripe/Razorpay) */}
+      {showPaymentModal && paymentCourse && (
+        <PaymentMethodModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setPaymentCourse(null);
+          }}
+          course={paymentCourse}
+          token={localStorage.getItem("token")}
+          onPaymentSuccess={(courseId) => {
+            // Redirect to enrolled courses after successful payment
+            navigate("/courses", { state: { activeTab: "my-courses" } });
+            fetchUserProfile();
+          }}
+        />
       )}
     </div>
   );
