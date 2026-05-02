@@ -42,7 +42,7 @@ AIVideo.init(
     {
         sequelize,
         modelName: "AIVideo",
-        timestamps: true,
+        timestamps: false,
         indexes: [
             {
                 unique: true,

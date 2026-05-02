@@ -47,7 +47,7 @@ Preference.init(
     sequelize,
     modelName: "Preference",
     tableName: "Preferences",
-    timestamps: true,
+    timestamps: false,
   }
 );
 

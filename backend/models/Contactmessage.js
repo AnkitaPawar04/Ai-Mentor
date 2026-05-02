@@ -58,7 +58,7 @@ const ContactMessage = sequelize.define(
   },
   {
     tableName: "contact_messages",
-    timestamps: true,
+    timestamps: false,
     underscored: true,
   },
 );

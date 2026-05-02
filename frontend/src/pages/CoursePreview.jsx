@@ -282,6 +282,7 @@ export default function CoursePreview() {
       return;
     }
     // PAID COURSE FLOW - Open payment method modal
+    setShowEnrollPopup(false); // ✅ Close enroll popup first
     setPaymentCourse(selectedCourse);
     setShowPaymentModal(true);
   };

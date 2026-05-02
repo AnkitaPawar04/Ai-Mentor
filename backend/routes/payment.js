@@ -2,6 +2,7 @@ import express from "express";
 import Stripe from "stripe";
 import crypto from "crypto";
 import User from "../models/User.js";
+import Course from "../models/Course.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -9,37 +10,49 @@ const router = express.Router();
 // ✅ Initialize Stripe safely
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// ✅ Razorpay credentials
+// ✅ Razorpay credentials with validation
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 
-// ✅ CREATE CHECKOUT SESSION
-router.post("/create-checkout-session", async (req, res) => {
+// ✅ Validate Razorpay credentials at startup
+if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+  console.warn(
+    "⚠️ Warning: Razorpay credentials not configured. Payment routes will fail."
+  );
+}
+
+// ✅ CREATE CHECKOUT SESSION (SECURE - Fetch price from database)
+router.post("/create-checkout-session", protect, async (req, res) => {
   try {
-    const { course } = req.body;
+    const { courseId } = req.body;
 
-    console.log("Incoming course:", course);
-
-    // ✅ Validate course data
-    if (
-      !course ||
-      !course.id ||
-      !course.title ||
-      !course.priceValue ||
-      Number(course.priceValue) <= 0
-    ) {
+    // ✅ Validate courseId
+    if (!courseId) {
       return res.status(400).json({
-        error: "Invalid course data",
+        error: "Course ID is required",
       });
     }
 
-    // ✅ Convert price safely (₹ → paise)
+    // ✅ SECURITY: Fetch course from database (client cannot tamper with price)
+    const course = await Course.findByPk(courseId);
+    if (!course) {
+      return res.status(404).json({
+        error: "Course not found",
+      });
+    }
+
+    // ✅ Validate price from database
+    if (!Number.isFinite(Number(course.priceValue)) || Number(course.priceValue) <= 0) {
+      return res.status(400).json({
+        error: "Invalid course price",
+      });
+    }
+
+    // ✅ Convert verified price safely (₹ → paise)
     const amount = Math.round(Number(course.priceValue) * 100);
 
     // ✅ Build success URL
-    const successUrl = `${process.env.FRONTEND_URL}/success?courseId=${course.id}&title=${encodeURIComponent(course.title)}`;
-
-    console.log("✅ SUCCESS URL:", successUrl); // 🔥 DEBUG
+    const successUrl = `${process.env.FRONTEND_URL}/success?courseId=${courseId}&title=${encodeURIComponent(course.title)}`;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -60,7 +73,7 @@ router.post("/create-checkout-session", async (req, res) => {
 
       // ✅ pass metadata (VERY IMPORTANT for future webhook)
       metadata: {
-        courseId: course.id.toString(),
+        courseId: courseId.toString(),
         courseTitle: course.title,
       },
 
@@ -81,33 +94,50 @@ router.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// ✅ CREATE RAZORPAY ORDER
+// ✅ CREATE RAZORPAY ORDER (SECURE - Fetch price from database)
 router.post("/create-razorpay-order", protect, async (req, res) => {
   try {
-    const { course } = req.body;
-
-    if (
-      !course ||
-      !course.id ||
-      !course.title ||
-      !course.priceValue ||
-      Number(course.priceValue) <= 0
-    ) {
-      return res.status(400).json({
-        error: "Invalid course data",
+    // ✅ Check Razorpay credentials
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({
+        error: "Razorpay credentials not configured",
       });
     }
 
-    // Convert price to paise (Razorpay uses smallest currency unit)
+    const { courseId } = req.body;
+
+    // ✅ Validate courseId
+    if (!courseId) {
+      return res.status(400).json({
+        error: "Course ID is required",
+      });
+    }
+
+    // ✅ SECURITY: Fetch course from database (client cannot tamper with price)
+    const course = await Course.findByPk(courseId);
+    if (!course) {
+      return res.status(404).json({
+        error: "Course not found",
+      });
+    }
+
+    // ✅ Validate price from database using Number.isFinite()
+    if (!Number.isFinite(Number(course.priceValue)) || Number(course.priceValue) <= 0) {
+      return res.status(400).json({
+        error: "Invalid course price",
+      });
+    }
+
+    // ✅ Convert verified price to paise (Razorpay uses smallest currency unit)
     const amount = Math.round(Number(course.priceValue) * 100);
 
     // Create order using Razorpay API
     const options = {
       amount: amount,
       currency: "INR",
-      receipt: `receipt_${course.id}_${Date.now()}`,
+      receipt: `receipt_${courseId}_${Date.now()}`,
       notes: {
-        courseId: course.id,
+        courseId: courseId,
         courseTitle: course.title,
       },
     };
@@ -142,6 +172,7 @@ router.post("/create-razorpay-order", protect, async (req, res) => {
       amount: orderData.amount,
       currency: orderData.currency,
       keyId: RAZORPAY_KEY_ID,
+      courseId: courseId, // Store courseId for verification later
     });
   } catch (error) {
     console.error("❌ Razorpay Order Creation Error:", error.message);
@@ -151,15 +182,32 @@ router.post("/create-razorpay-order", protect, async (req, res) => {
   }
 });
 
-// ✅ VERIFY RAZORPAY PAYMENT
+// ✅ VERIFY RAZORPAY PAYMENT (SECURE - Validate order/course mapping)
 router.post("/verify-razorpay-payment", protect, async (req, res) => {
   try {
+    // ✅ Check Razorpay credentials
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({
+        error: "Razorpay credentials not configured",
+        success: false,
+      });
+    }
+
     const { orderId, paymentId, signature, courseId } = req.body;
     const userId = req.user?.id;
 
     if (!orderId || !paymentId || !signature || !courseId || !userId) {
       return res.status(400).json({
         error: "Missing required fields",
+      });
+    }
+
+    // ✅ SECURITY: Verify course exists before processing payment
+    const course = await Course.findByPk(courseId);
+    if (!course) {
+      return res.status(404).json({
+        error: "Course not found",
+        success: false,
       });
     }
 

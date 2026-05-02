@@ -17,6 +17,10 @@ const LessonContent = sequelize.define("LessonContent", {
     keyConcepts: {
         type: DataTypes.JSONB,
     },
+}, {
+    sequelize,
+    modelName: "LessonContent",
+    timestamps: false,
 });
 
 export default LessonContent;

@@ -52,11 +52,10 @@ Notification.init(
     {
         sequelize,
         modelName: "Notification",
-        timestamps: true,
+        timestamps: false,
         indexes: [
             { fields: ["userId"] },
             { fields: ["unread"] },
-            { fields: ["createdAt"] },
         ],
     }
 );

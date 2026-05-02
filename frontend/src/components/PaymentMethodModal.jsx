@@ -1,5 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+import API_BASE_URL from "../lib/api.js";
 
 export default function PaymentMethodModal({
   isOpen,
@@ -9,10 +10,9 @@ export default function PaymentMethodModal({
   onPaymentSuccess,
 }) {
   const [processingMethod, setProcessingMethod] = useState(null); // null, "stripe", or "razorpay"
+  const [razorpayScriptError, setRazorpayScriptError] = useState(false);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-
-  // ✅ Handle Stripe Payment
+  // ✅ Handle Stripe Payment (SECURE - Send only courseId)
   const handleStripePayment = async () => {
     setProcessingMethod("stripe");
     try {
@@ -23,18 +23,14 @@ export default function PaymentMethodModal({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          course: {
-            id: course.id,
-            title: course.title,
-            priceValue: course.priceValue,
-          },
+          courseId: course.id,
         }),
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error("Stripe session failed");
+        throw new Error(data.error || "Stripe session failed");
       }
     } catch (err) {
       console.error(err);
@@ -43,9 +39,10 @@ export default function PaymentMethodModal({
     }
   };
 
-  // ✅ Handle Razorpay Payment
+  // ✅ Handle Razorpay Payment (SECURE - Send only courseId, handle script errors)
   const handleRazorpayPayment = async () => {
     setProcessingMethod("razorpay");
+    setRazorpayScriptError(false);
     try {
       // Step 1: Create Razorpay order
       const orderRes = await fetch(
@@ -57,18 +54,14 @@ export default function PaymentMethodModal({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            course: {
-              id: course.id,
-              title: course.title,
-              priceValue: course.priceValue,
-            },
+            courseId: course.id,
           }),
         }
       );
 
       const orderData = await orderRes.json();
       if (!orderData.orderId) {
-        throw new Error("Failed to create Razorpay order");
+        throw new Error(orderData.error || "Failed to create Razorpay order");
       }
 
       // Step 2: Load Razorpay script and open checkout
@@ -76,44 +69,59 @@ export default function PaymentMethodModal({
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
 
+      // ✅ Handle script loading timeout
+      const timeout = setTimeout(() => {
+        if (!window.Razorpay) {
+          console.error("❌ Razorpay script timeout");
+          toast.error("Razorpay loading timeout. Please try again.");
+          setProcessingMethod(null);
+          setRazorpayScriptError(true);
+        }
+      }, 5000);
+
       script.onload = () => {
+        clearTimeout(timeout);
         const options = {
           key: orderData.keyId,
           amount: orderData.amount,
           currency: orderData.currency,
           order_id: orderData.orderId,
           handler: async (response) => {
-            // Step 3: Verify payment
-            const verifyRes = await fetch(
-              `${API_BASE_URL}/api/payment/verify-razorpay-payment`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  orderId: orderData.orderId,
-                  paymentId: response.razorpay_payment_id,
-                  signature: response.razorpay_signature,
-                  courseId: course.id,
-                }),
-              }
-            );
+            try {
+              // Step 3: Verify payment
+              const verifyRes = await fetch(
+                `${API_BASE_URL}/api/payment/verify-razorpay-payment`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    orderId: orderData.orderId,
+                    paymentId: response.razorpay_payment_id,
+                    signature: response.razorpay_signature,
+                    courseId: course.id,
+                  }),
+                }
+              );
 
-            const verifyData = await verifyRes.json();
-            if (verifyData.success) {
-              toast.success("Payment successful!");
-              onPaymentSuccess(course.id);
-              onClose();
-            } else {
+              const verifyData = await verifyRes.json();
+              if (verifyData.success) {
+                toast.success("Payment successful!");
+                // Close modal immediately
+                onClose();
+                // Then redirect (this triggers navigate in CoursePreview)
+                onPaymentSuccess(course.id);
+              } else {
+                toast.error(verifyData.error || "Payment verification failed");
+                setProcessingMethod(null);
+              }
+            } catch (err) {
+              console.error("Verification error:", err);
               toast.error("Payment verification failed");
+              setProcessingMethod(null);
             }
-            setProcessingMethod(null);
-          },
-          prefill: {
-            name: "User Name",
-            email: "user@example.com",
           },
           theme: {
             color: "#16B896",
@@ -124,10 +132,19 @@ export default function PaymentMethodModal({
         razorpayCheckout.open();
       };
 
+      // ✅ Handle script loading errors
+      script.onerror = () => {
+        clearTimeout(timeout);
+        console.error("❌ Failed to load Razorpay script");
+        toast.error("Failed to load Razorpay. Please try again.");
+        setProcessingMethod(null);
+        setRazorpayScriptError(true);
+      };
+
       document.body.appendChild(script);
     } catch (err) {
       console.error(err);
-      toast.error("Razorpay payment failed");
+      toast.error(err.message || "Razorpay payment failed");
       setProcessingMethod(null);
     }
   };

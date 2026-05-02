@@ -60,11 +60,10 @@ CommunityPost.init(
   {
     sequelize,
     modelName: "CommunityPost",
-    timestamps: true,
+    timestamps: false,
     indexes: [
       { fields: ["type"] },
       { fields: ["courseId"] },
-      { fields: ["createdAt"] },
     ],
   }
 );

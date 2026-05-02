@@ -124,7 +124,7 @@ User.init(
   {
     sequelize,
     modelName: "User",
-    timestamps: true,
+    timestamps: false,
     hooks: {
       beforeSave: async (user) => {
         // hash password only if it was changed
