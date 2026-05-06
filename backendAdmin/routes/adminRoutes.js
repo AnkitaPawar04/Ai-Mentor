@@ -5,16 +5,28 @@ import {
   getAdminProfile,
   deleteAdmin,
   logoutAdmin,
+  getAllAdmins,
+} from "../controllers/authController.js";
+import {
+  getAllCourses,
+  createCourse,
+} from "../controllers/courseController.js";
+import {
+  getAllUsers,
+  updateUserStatus,
+  deleteUser,
+} from "../controllers/userController.js";
+import {
   getAllEnrollments,
   getAllPayments,
-  getAllCourses,
-  getAllUsers,
-  getAllAdmins,
+  getAllReports,
+} from "../controllers/dataController.js";
+import {
   getAdminNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   clearAllNotifications,
-} from "../controllers/adminController.js";
+} from "../controllers/notificationController.js";
 import { protectAdmin, superAdminOnly } from "../middleware/adminAuthMiddleware.js";
 
 const router = express.Router();
@@ -32,8 +44,14 @@ router.delete("/:id", protectAdmin, superAdminOnly, deleteAdmin);
 router.get("/enrollments", protectAdmin, getAllEnrollments);
 router.get("/payments", protectAdmin, getAllPayments);
 router.get("/courses", protectAdmin, getAllCourses);
+router.post("/courses", protectAdmin, createCourse);
 router.get("/users", protectAdmin, getAllUsers);
+router.patch("/users/:id/status", protectAdmin, superAdminOnly, updateUserStatus);
+router.delete("/users/:id", protectAdmin, superAdminOnly, deleteUser);
+router.get("/reports", protectAdmin, getAllReports);
 router.get("/admins", protectAdmin, superAdminOnly, getAllAdmins);
+
+// Notifications
 router.get("/notifications", protectAdmin, getAdminNotifications);
 router.patch("/notifications/mark-all-read", protectAdmin, markAllNotificationsRead);
 router.patch("/notifications/:id/read", protectAdmin, markNotificationRead);

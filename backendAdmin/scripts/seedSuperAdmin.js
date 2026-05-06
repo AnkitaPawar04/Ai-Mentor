@@ -1,46 +1,8 @@
 import dotenv from "dotenv";
-import bcrypt from "bcryptjs";
-import { DataTypes } from "sequelize";
 import { connectDB, sequelize } from "../config/db.js";
+import { Admin } from "../models/index.js";
 
 dotenv.config();
-
-const Admin = sequelize.define(
-  "Admin",
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    role: {
-      type: DataTypes.ENUM("superadmin", "admin"),
-      defaultValue: "admin",
-    },
-  },
-  {
-    timestamps: true,
-    tableName: "Admins",
-  }
-);
-
-Admin.beforeCreate(async (admin) => {
-  const salt = await bcrypt.genSalt(10);
-  admin.password = await bcrypt.hash(admin.password, salt);
-});
 
 const seedSuperAdmin = async () => {
   const name = process.env.SUPER_ADMIN_NAME || process.env.ADMIN_NAME;

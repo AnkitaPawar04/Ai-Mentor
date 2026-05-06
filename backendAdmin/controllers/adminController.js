@@ -115,6 +115,63 @@ const Course = sequelize.define(
   }
 );
 
+const CommunityPost = sequelize.define(
+  "CommunityPost",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    content: DataTypes.TEXT,
+    userId: DataTypes.UUID,
+  },
+  {
+    timestamps: true,
+    tableName: "CommunityPosts",
+  }
+);
+
+const Report = sequelize.define(
+  "Report",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    reporterId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    postId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    reason: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.STRING,
+      defaultValue: "pending",
+    },
+  },
+  {
+    timestamps: true,
+    tableName: "Reports",
+  }
+);
+
+// Setup Associations
+Report.belongsTo(User, { foreignKey: "reporterId", as: "reporter" });
+Report.belongsTo(CommunityPost, { foreignKey: "postId", as: "post" });
+CommunityPost.belongsTo(User, { foreignKey: "userId", as: "author" });
+
 const AdminNotification = sequelize.define(
   "AdminNotification",
   {
@@ -660,6 +717,132 @@ const clearAllNotifications = async (req, res) => {
   }
 };
 
+const ensureReportSeed = async () => {
+  try {
+    await CommunityPost.sync();
+    await Report.sync();
+
+    const reportCount = await Report.count();
+    if (reportCount > 0) return;
+
+    // Get or create users
+    let users = await User.findAll({ limit: 2 });
+    if (users.length < 2) {
+      const dummyUsers = await User.bulkCreate([
+        {
+          name: "John Reporter",
+          email: "john@example.com",
+          role: "user",
+        },
+        {
+          name: "Alice Author",
+          email: "alice@example.com",
+          role: "user",
+        },
+      ]);
+      users = dummyUsers;
+    }
+
+    // Get or create post
+    let post = await CommunityPost.findOne();
+    if (!post) {
+      post = await CommunityPost.create({
+        content: "This is a suspicious community post that might get reported.",
+        userId: users[1].id,
+      });
+    }
+
+    // Create dummy reports
+    await Report.bulkCreate([
+      {
+        reporterId: users[0].id,
+        postId: post.id,
+        reason: "spam",
+        description: "This looks like a spam message to me.",
+        status: "pending",
+      },
+      {
+        reporterId: users[0].id,
+        postId: post.id,
+        reason: "inappropriate",
+        description: "The language used here is not suitable for the platform.",
+        status: "resolved",
+      },
+    ]);
+
+    console.log("✅ Reports seeded successfully!");
+  } catch (error) {
+    console.error("SEED REPORTS ERROR:", error.message);
+  }
+};
+
+// @desc    Get all Reports
+// @route   GET /api/admin/reports
+// @access  Private
+const getAllReports = async (req, res) => {
+  try {
+    await ensureReportSeed();
+    const reports = await Report.findAll({
+      include: [
+        {
+          model: User,
+          as: "reporter",
+          attributes: ["id", "name", "email"],
+        },
+        {
+          model: CommunityPost,
+          as: "post",
+          attributes: ["id", "content"],
+          include: [
+            {
+              model: User,
+              as: "author",
+              attributes: ["id", "name"],
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: reports,
+    });
+  } catch (error) {
+    console.error("GET REPORTS ERROR:", error.message);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+// @desc    Create a new Course
+// @route   POST /api/admin/courses
+// @access  Private
+const createCourse = async (req, res) => {
+  try {
+    const { title, category, priceValue, currency } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ success: false, message: "Title is required" });
+    }
+
+    const course = await Course.create({
+      title,
+      category,
+      priceValue: parseFloat(priceValue) || 0,
+      currency: currency || "INR",
+    });
+
+    res.status(201).json({
+      success: true,
+      data: course,
+    });
+  } catch (error) {
+    console.error("CREATE COURSE ERROR:", error.message);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
 export {
   Admin,
   registerAdmin,
@@ -670,10 +853,12 @@ export {
   getAllEnrollments,
   getAllPayments,
   getAllCourses,
+  createCourse,
   getAllUsers,
   getAllAdmins,
   getAdminNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   clearAllNotifications,
+  getAllReports,
 };

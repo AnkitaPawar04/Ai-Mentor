@@ -9,6 +9,7 @@ import EnrollmentsPage from "./pages/EnrollmentsPage";
 import LoginPage from "./pages/LoginPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import UsersPage from "./pages/UsersPage";
+import ReportsPage from "./pages/ReportsPage";
 
 const PAGE_COMPONENTS = {
   dashboard: DashboardPage,
@@ -16,6 +17,7 @@ const PAGE_COMPONENTS = {
   users: UsersPage,
   enrollments: EnrollmentsPage,
   payments: PaymentsPage,
+  reports: ReportsPage,
 };
 
 function App() {

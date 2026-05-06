@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { Admin } from "../controllers/adminController.js";
+import { Admin } from "../models/index.js";
 
 // @desc    Protect routes - Verify JWT Token
 // @access  Private

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Settings,
   Users,
+  Flag,
   X,
 } from "lucide-react";
 import { NAV_ITEMS } from "../../constants/adminNavigation";
@@ -17,6 +18,7 @@ const ICONS = {
   users: Users,
   enrollments: GraduationCap,
   payments: CreditCard,
+  reports: Flag,
 };
 
 function AdminSidebar({
