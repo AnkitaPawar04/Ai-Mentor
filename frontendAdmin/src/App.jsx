@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import Header from "./components/Header";
 import AdminSidebar from "./components/layout/AdminSidebar";
@@ -10,6 +10,8 @@ import LoginPage from "./pages/LoginPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import UsersPage from "./pages/UsersPage";
 import ReportsPage from "./pages/ReportsPage";
+import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 
 const PAGE_COMPONENTS = {
   dashboard: DashboardPage,
@@ -18,6 +20,8 @@ const PAGE_COMPONENTS = {
   enrollments: EnrollmentsPage,
   payments: PaymentsPage,
   reports: ReportsPage,
+  profile: ProfilePage,
+  settings: SettingsPage,
 };
 
 function App() {
@@ -26,6 +30,14 @@ function App() {
   const [page, setPage] = useState("courses");
   const [mobileNav, setMobileNav] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const pathName = location.pathname.replace("/", "");     
+    if (PAGE_COMPONENTS[pathName]) {
+      setPage(pathName);
+    }
+  }, [location.pathname]);
+
   const title = useMemo(() => PAGE_TITLES[page] ?? PAGE_TITLES.dashboard, [page]);
   const CurrentPage = PAGE_COMPONENTS[page] ?? DashboardPage;
   const isLoginRoute = location.pathname === "/login";
