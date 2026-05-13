@@ -6,6 +6,7 @@ import {
   deleteAdmin,
   logoutAdmin,
   getAllAdmins,
+  changePassword,
 } from "../controllers/authController.js";
 import {
   getAllCourses,
@@ -37,6 +38,7 @@ router.post("/login", loginAdmin);
 // Protected routes
 router.post("/register", protectAdmin, superAdminOnly, registerAdmin);
 router.get("/profile", protectAdmin, getAdminProfile);
+router.put("/change-password", protectAdmin, changePassword);
 router.post("/logout", protectAdmin, logoutAdmin);
 router.delete("/:id", protectAdmin, superAdminOnly, deleteAdmin);
 

@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Admin } from "../models/index.js";
 import { adminLoginSchema, adminRegisterSchema } from "../schemas/adminAuthSchema.js";
@@ -93,5 +94,28 @@ export const getAllAdmins = async (req, res) => {
     res.status(200).json({ success: true, data: admins });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  try {
+    const admin = await Admin.findByPk(req.admin.id);
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+
+    const isMatch = await admin.matchPassword(currentPassword);
+    if (!isMatch) return res.status(401).json({ message: "Incorrect current password" });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    admin.password = hashedPassword;
+    await admin.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Change Password Error:", error);
+    res.status(500).json({ message: "Server Error" });
   }
 };
