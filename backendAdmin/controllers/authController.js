@@ -99,10 +99,18 @@ export const getAllAdmins = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ message: "New password must be at least 6 characters long." });
+  }
   
   try {
     const admin = await Admin.findByPk(req.admin.id);
     if (!admin) return res.status(404).json({ message: "Admin not found" });
+
+    if (admin.role === "superadmin") {
+      return res.status(403).json({ message: "Action restricted: Superadmin password cannot be modified." });
+    }
 
     const isMatch = await admin.matchPassword(currentPassword);
     if (!isMatch) return res.status(401).json({ message: "Incorrect current password" });
