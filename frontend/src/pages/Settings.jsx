@@ -284,7 +284,7 @@ export default function Settings() {
 
   /* ── shared panel renderers ── */
   const ProfilePanel = () => (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl mx-auto">
       <div className="hidden lg:block mb-8">
         <h1 className="text-xl sm:text-2xl md:text-[30px] font-bold text-main font-[Inter] mb-2">{t("settings.profile.title")}</h1>
         <p className="text-sm sm:text-[16px] text-muted font-[Inter]">{t("settings.profile.subtitle")}</p>
