@@ -19,8 +19,10 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import certificateRoutes from "./routes/certificateRoutes.js";
 import paymentRoutes from "./routes/payment.js";
+import razorpayRoutes from "./routes/razorpay.js";
 import preferenceRoutes from "./routes/preferenceRoutes.js";
 import contactUsRoutes from "./routes/contactus.js"; // ✅ fixed import
+import reportRoutes from "../backend/routes/reportRoutes.js";
 
 // ================= MODELS =================
 import "./models/CommunityPost.js";
@@ -30,6 +32,9 @@ import "./models/modelAssociations.js";
 import "./models/contactMessage.js";
 
 dotenv.config();
+
+import { validateEnv } from "./env-validator.js";
+validateEnv();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,6 +65,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/payment/razorpay", razorpayRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/sidebar", sidebarRoutes);
 app.use("/api/ai", aiRoutes);
@@ -69,6 +75,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/certificate", certificateRoutes);
 app.use("/api/preferences", preferenceRoutes);
 app.use("/api/contactus", contactUsRoutes); // ✅ added route
+app.use("/api/coures-reports", reportRoutes);
 
 // ================= 404 HANDLER =================
 app.use((req, res) => {
@@ -95,9 +102,15 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    await sequelize.sync({ alter: true });
-    console.log("✅ Database models synced");
+    const isDevelopment = process.env.NODE_ENV !== "production";
+    const syncOptions = isDevelopment ? { alter: true } : {};
 
+    await sequelize.sync(syncOptions);
+    console.log(
+      isDevelopment
+        ? "✅ Database models synced with schema auto-alter enabled (development)"
+        : "✅ Database models synced",
+    );
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });

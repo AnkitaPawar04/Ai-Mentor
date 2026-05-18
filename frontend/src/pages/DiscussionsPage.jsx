@@ -248,6 +248,21 @@ const DiscussionsPage = () => {
     [token]
   );
 
+const latestPostsByCourse = Object.values(
+  coursePosts
+    .filter((post) => isAdmin || !post.hiddenAt)
+    .reduce((acc, post) => {
+      if (!post.courseId) return acc;
+
+      // First occurrence = latest (because order based on createdAt attribute)
+      if (!acc[post.courseId]) {
+        acc[post.courseId] = post;
+      }
+
+      return acc;
+    }, {})
+);
+  
   // Course panel - posts for a specific course
   const fetchPanelPosts = useCallback(
     async (courseId, sort) => {
@@ -803,7 +818,7 @@ const DiscussionsPage = () => {
 
   return (
     <>
-        <div className="relative overflow-hidden bg-linear-to-br from-teal-700 via-teal-600 to-teal-800 pt-16 pb-12 px-4 sm:px-8">
+        <div className="relative overflow-hidden bg-linear-to-br from-teal-700 via-teal-600 to-teal-800 pt-14 sm:pt-16 pb-10 sm:pb-12 px-3 sm:px-6 md:px-8">
           {/* grid pattern overlay */}
           <div
             className="absolute inset-0 opacity-10"
@@ -814,7 +829,7 @@ const DiscussionsPage = () => {
             }}
           />
           <div className="relative z-10 max-w-4xl mx-auto text-center space-y-4">
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-white">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
               {activeView === "courseCommunity" ? (
                 <>
                   {t("discussions.course_communities").split(" ")[0]}{" "}
@@ -831,14 +846,14 @@ const DiscussionsPage = () => {
                 </span>
               )}
             </h1>
-            <p className="text-teal-100 text-sm sm:text-base max-w-xl mx-auto">
+            <p className="text-teal-100 text-xs sm:text-sm md:text-base max-w-md sm:max-w-xl mx-auto">
               {t("discussions.global_subtitle")}
             </p>
             {/* Tabs */}
-            <div className="flex justify-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-3 pt-2 px-2 sm:px-4">
               <button
                 onClick={() => setActiveView("courseCommunity")}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm transition-all ${
+                className={`flex items-center gap-2 px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all ${
                   activeView === "courseCommunity"
                     ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
                     : "bg-black/30 text-white hover:bg-black/40"
@@ -849,7 +864,7 @@ const DiscussionsPage = () => {
               </button>
               <button
                 onClick={() => setActiveView("global")}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm transition-all ${
+                className={`flex items-center gap-2 px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all ${
                   activeView === "global"
                     ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
                     : "bg-black/30 text-white hover:bg-black/40"
@@ -864,9 +879,9 @@ const DiscussionsPage = () => {
 
         <div className="flex-1 flex relative">
           {activeView === "courseCommunity" && (
-            <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
+           <main className="flex-1 p-3 sm:p-5 md:p-6 overflow-y-auto">
               <div
-                className={`max-w-5xl mx-auto ${
+                className={`max-w-full lg:max-w-5xl mx-auto px-1 sm:px-2 ${
                   selectedCourse ? "xl:mr-105" : ""
                 }`}
               >
@@ -932,9 +947,8 @@ const DiscussionsPage = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {coursePosts
-                        .filter((post) => isAdmin || !post.hiddenAt)
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                      {latestPostsByCourse
                         .map((post) => (
                         <div
                           key={post.id}
@@ -944,7 +958,7 @@ const DiscussionsPage = () => {
                               courseName: courseNameForPost(post),
                             })
                           }
-                          className={`bg-card border border-border rounded-xl p-5 shadow-sm hover:border-indigo-500/50 cursor-pointer transition-colors ${
+                          className={`bg-card border border-border rounded-xl p-3 sm:p-4 md:p-5 shadow-sm hover:border-indigo-500/50 cursor-pointer transition-colors ${
                             post.hiddenAt ? "opacity-60" : ""
                           }`}
                         >
@@ -1025,10 +1039,10 @@ const DiscussionsPage = () => {
               {selectedCourse && (
                 <div
                   ref={panelRef}
-                  className="fixed top-18 right-0 h-[calc(100%-72px)] w-full sm:w-100 bg-card border-l border-border shadow-2xl z-50 flex flex-col"
+                   className="fixed top-16 sm:top-18 right-0 h-[calc(100%-64px)] sm:h-[calc(100%-72px)] w-full sm:w-96 md:w-[420px] lg:w-[480px] bg-card border-l border-border shadow-2xl z-50 flex flex-col"
                 >
                   {/* panel header */}
-                  <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
+                  <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between shrink-0">
                     <div>
                       <div className="flex items-center gap-2">
                         <MessageCircle className="w-5 h-5 text-indigo-500" />
@@ -1193,7 +1207,7 @@ const DiscussionsPage = () => {
                                   </button>
                                   {/* Dropdown Menu */}
                                   {openDropdown === `post-${post.id}` && (
-                                    <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-1 z-10 min-w-30">
+                                    <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-1 z-10 min-w-[120px] sm:min-w-[140px]">
                                       {post.userId === user?.id ? (
                                         <>
                                           {/* Edit and Delete options for post owner */}
@@ -1269,7 +1283,7 @@ const DiscussionsPage = () => {
                               ) : (
                                 <p className="text-sm text-muted mt-1">{post.content}</p>
                               )}
-                              <div className="flex items-center gap-4 mt-2 text-xs text-muted">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs text-muted">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1532,7 +1546,7 @@ const DiscussionsPage = () => {
                   </div>
 
                   {/* panel input */}
-                  <div className="p-3 border-t border-border shrink-0">
+                  <div className="p-2 sm:p-3 border-t border-border shrink-0">
                     <div className="flex items-center gap-2">
                       <Smile className="w-5 h-5 text-muted shrink-0" />
                       <input
@@ -1549,7 +1563,7 @@ const DiscussionsPage = () => {
                             handlePanelPost(panelReplyText);
                           }
                         }}
-                        className="flex-1 px-3 py-2 bg-input border border-border rounded-lg text-sm text-main placeholder-muted focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-input border border-border rounded-lg text-xs sm:text-sm text-main placeholder-muted focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                       <button
                         onClick={() => handlePanelPost(panelReplyText)}
@@ -1570,7 +1584,7 @@ const DiscussionsPage = () => {
 
           {activeView === "global" && (
             <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
-              <div className="max-w-4xl mx-auto space-y-6">
+              <div className="max-w-full sm:max-w-3xl md:max-w-4xl mx-auto space-y-4 sm:space-y-6 px-2">
                 {/* Welcome Banner */}
                 {showWelcome && (
                   <div className="relative bg-linear-to-r from-red-900/30 to-orange-900/30 border border-orange-500/30 rounded-xl p-5">
@@ -1652,7 +1666,7 @@ const DiscussionsPage = () => {
                       }}
                       placeholder={t("discussions.post_placeholder")}
                       rows={4}
-                      className="flex-1 px-4 py-3 bg-input border border-border rounded-lg text-sm text-main placeholder-muted focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                     className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-input border border-border rounded-lg text-xs sm:text-sm text-main placeholder-muted focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
                     />
                   </div>
                   <div className="flex items-center justify-between mt-3 flex-wrap gap-3">
@@ -2213,8 +2227,8 @@ const DiscussionsPage = () => {
 
       {/* Popup Modal */}
       {popupModal.open && (
-        <div className="fixed inset-0 z-160 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-sm">
+        <div className="fixed inset-0 z-160 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
+          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-xs sm:max-w-sm md:max-w-md">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <h3 className="font-bold text-main text-base">{popupModal.title || "Notice"}</h3>
               <button
