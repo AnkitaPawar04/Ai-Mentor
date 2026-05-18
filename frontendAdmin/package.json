@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
+    "axios": "^1.16.0",
     "file-saver": "^2.0.5",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
@@ -19,7 +20,7 @@
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.13.2",
     "tailwindcss": "^4.1.18",
-    "xlsx": "^0.18.5"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
