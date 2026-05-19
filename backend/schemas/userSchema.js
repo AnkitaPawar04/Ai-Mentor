@@ -22,18 +22,10 @@ export const purchaseCourseSchema = z.object({
 
 export const courseProgressSchema = z.object({
   courseId: z.union([z.string(), z.number()]).transform((val) => Number(val)),
-  lessonData: z.object({
-    lessonId: z.string().min(1, "Lesson ID is required"),
-    data: z.any(),
-  }).optional(),
-  currentLesson: z.object({
-    lessonId: z.string().min(1, "Lesson ID is required"),
-    moduleTitle: z.string().optional(),
-  }).optional(),
-  completedLesson: z.object({
-    lessonId: z.string().min(1, "Lesson ID is required"),
-    completedAt: z.string().or(z.date()).optional(),
-  }).optional(),
+  
+  lessonData: z.any().optional(),
+  currentLesson: z.any().optional(),
+  completedLesson: z.any().optional(),
 });
 
 export const updateSettingsSchema = z.object({
