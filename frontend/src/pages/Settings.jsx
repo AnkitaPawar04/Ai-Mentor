@@ -286,13 +286,12 @@ export default function Settings() {
   const activeMobileNav = NAV_KEYS.find((n) => n.key === mobileModalKey);
 
   /* ── shared panel renderers ── */
-  function ProfilePanel () {
-    return (
-      <div className="max-w-3xl">
-        <div className="hidden lg:block mb-8">
-          <h1 className="text-xl sm:text-2xl md:text-[30px] font-bold text-main font-[Inter] mb-2">{t("settings.profile.title")}</h1>
-          <p className="text-sm sm:text-[16px] text-muted font-[Inter]">{t("settings.profile.subtitle")}</p>
-        </div>
+  const ProfilePanel = () => (
+    <div className="max-w-3xl mx-auto">
+      <div className="hidden lg:block mb-8">
+        <h1 className="text-xl sm:text-2xl md:text-[30px] font-bold text-main font-[Inter] mb-2">{t("settings.profile.title")}</h1>
+        <p className="text-sm sm:text-[16px] text-muted font-[Inter]">{t("settings.profile.subtitle")}</p>
+      </div>
       <div className="bg-card rounded-2xl sm:rounded-[24px] shadow-[0_4px_6px_0_rgba(0,0,0,0.10),0_10px_15px_0_rgba(0,0,0,0.10)] p-4 sm:p-5 md:p-6">
         <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-6">
           <div className="flex flex-col items-center">
